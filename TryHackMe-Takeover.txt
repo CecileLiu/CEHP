@@ -1,0 +1,22 @@
+Takeover of TryHackMe
+https://tryhackme.com/room/takeover
+1. use openvpn in kali and connect to TryHackMe (補充怎麼使用tryhackme的openvpn)
+2. check the ip of `tun0`
+3. install seclist: sudo apt-get install seclist
+4. sudo nmap -T5 -sS -sV -O <host-ip>，確認有開443及80這兩個port
+5. sudo nano /etc/hosts，然後在最後一行加入
+<host-ip>  futurevera.thm
+6. 打開瀏覽器輸入https://futurevera.thm，確認有連線到
+7. gobuster vhost -u https://futurevera.thm -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt -k --append-domain
+可以看到有隱藏的subdomain被掃出來，分別是support及blog
+8. ffuf -u https://<host-ip> -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt -H "Host:FUZZ.futurevera.thm"
+掃完之後可以看到很多條的結果其size都是4605，所以我們加上-fs這個參數
+9. ffuf -u https://<host-ip> -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt -H "Host:FUZZ.futurevera.thm" -fs 4605
+然後就可以看到同樣是在第7步被掃到的兩個subdomain
+10.我們針對http也做同樣的ffuf掃描(就是把https的s拿掉再掃)，然後會看到另外兩個subdomain
+11. 把在第7步跟第9步掃到的subdomian加到/etc/hosts中
+12. 打開瀏覽器，輸入support.futurevera.thm，然後到網址列的開頭的鎖頭的圖案按下去
+-> connection not secure -> more information -> security -> view certificate -> 尋找"Subject Alt Names"
+13. 把Subject Alt Names秀出來的DNS name加到/etc/hosts中，然後就可以用瀏覽器打開那個網頁
+14. 打開網頁後，換成用http(也就是把s去掉)連線，就會看到flag的出現
+
